@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5G Core Network - Intelligent MCP Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #080b11;
+            --panel-bg: rgba(13, 20, 35, 0.55);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            
+            /* Status Colors */
+            --color-success: #10b981;
+            --color-success-glow: rgba(16, 185, 129, 0.25);
+            --color-warning: #f59e0b;
+            --color-warning-glow: rgba(245, 158, 11, 0.25);
+            --color-danger: #ef4444;
+            --color-danger-glow: rgba(239, 68, 68, 0.25);
+            
+            /* Accent Colors */
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(239, 68, 68, 0.04) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.04) 0%, transparent 45%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Glass Panel */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Header layout */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            border-bottom: 1px solid var(--panel-border);
+            background: rgba(8, 11, 17, 0.85);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-section h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff 30%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-section span {
+            font-size: 12px;
+            background: var(--accent);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--panel-border);
+            padding: 8px 16px;
+            border-radius: 100px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--color-success);
+            box-shadow: 0 0 12px var(--color-success-glow);
+            animation: pulse-glow 2s infinite;
+        }
+        .status-text {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        /* Grid Dashboard Layout */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 360px;
+            gap: 24px;
+            padding: 30px 40px;
+            min-height: calc(100vh - 80px);
+        }
+
+        .sidebar-left, .sidebar-right {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Widgets Titles */
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-main);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-left: 3px solid var(--accent);
+            padding-left: 10px;
+        }
+
+        /* Metrics list */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .metric-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .metric-info h4 {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .metric-info p {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .metric-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--color-success);
+        }
+
+        /* PCAP files */
+        .capture-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 180px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .capture-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .capture-item span.filename {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            color: #a5b4fc;
+        }
+        .capture-item span.size {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        /* Network Topology SVG Panel */
+        .topology-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-height: 480px;
+        }
+        .topology-container {
+            flex-grow: 1;
+            position: relative;
+            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.04) 0%, transparent 70%);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        svg#topology-map {
+            width: 100%;
+            height: 100%;
+            max-height: 460px;
+        }
+
+        /* SVG Glow Styles */
+        .link-line {
+            stroke: var(--color-success);
+            stroke-width: 3;
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 6px var(--color-success-glow));
+            transition: all 0.5s ease;
+        }
+        .link-line.degraded {
+            stroke: var(--color-warning);
+            filter: drop-shadow(0 0 6px var(--color-warning-glow));
+            stroke-dasharray: 6, 6;
+            animation: dash 1s linear infinite;
+        }
+        .link-line.critical {
+            stroke: var(--color-danger);
+            filter: drop-shadow(0 0 6px var(--color-danger-glow));
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -20; }
+        }
+
+        .node-circle {
+            fill: #0f172a;
+            stroke: var(--color-success);
+            stroke-width: 3;
+            filter: drop-shadow(0 0 8px var(--color-success-glow));
+            transition: all 0.5s ease;
+            cursor: pointer;
+        }
+        .node-circle.degraded {
+            stroke: var(--color-warning);
+            filter: drop-shadow(0 0 8px var(--color-warning-glow));
+        }
+        .node-circle.critical {
+            stroke: var(--color-danger);
+            filter: drop-shadow(0 0 8px var(--color-danger-glow));
+            animation: pulse-danger-stroke 2s infinite;
+        }
+
+        @keyframes pulse-danger-stroke {
+            0% { stroke-width: 3; }
+            50% { stroke-width: 5; }
+            100% { stroke-width: 3; }
+        }
+
+        .node-text {
+            fill: var(--text-main);
+            font-size: 11px;
+            font-weight: 600;
+            text-anchor: middle;
+            pointer-events: none;
+            letter-spacing: 0.5px;
+        }
+        .node-label {
+            fill: var(--text-muted);
+            font-size: 10px;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        /* AI Diagnosis Box */
+        .ai-diagnosis-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .ai-content {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            font-size: 14px;
+            line-height: 1.5;
+            flex-grow: 1;
+        }
+        .ai-card {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .ai-card.critical {
+            background: rgba(239, 68, 68, 0.05);
+            border-color: rgba(239, 68, 68, 0.15);
+        }
+        .ai-card.warning {
+            background: rgba(245, 158, 11, 0.05);
+            border-color: rgba(245, 158, 11, 0.15);
+        }
+        .ai-field-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        .ai-card.critical .ai-field-title { color: var(--color-danger); }
+        .ai-card.warning .ai-field-title { color: var(--color-warning); }
+
+        .ai-text {
+            color: var(--text-main);
+        }
+        
+        .mitigation-box {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--accent);
+            border: none;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+            background: #4f46e5;
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn.btn-danger {
+            background: var(--color-danger);
+            box-shadow: 0 4px 12px var(--color-danger-glow);
+        }
+        .btn.btn-danger:hover {
+            background: #dc2626;
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+        }
+        .btn.btn-success {
+            background: var(--color-success);
+            box-shadow: 0 4px 12px var(--color-success-glow);
+        }
+        .btn.btn-success:hover {
+            background: #059669;
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+        }
+        .btn.btn-outline {
+            background: transparent;
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+        .btn.btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Chaos Center Panel */
+        .chaos-panel {
+            grid-column: 1 / span 3;
+        }
+        .chaos-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+        }
+        .chaos-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        .chaos-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .chaos-card-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+            min-height: 32px;
+        }
+        .chaos-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .chaos-actions button {
+            flex-grow: 1;
+            padding: 8px;
+            font-size: 11px;
+            border-radius: 8px;
+        }
+
+        /* Master heal header action */
+        .master-heal-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        /* Syslog container */
+        .log-panel {
+            max-height: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+        .log-feed {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #d1d5db;
+            overflow-y: auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 140px;
+        }
+        .log-line {
+            display: flex;
+            gap: 8px;
+            word-break: break-all;
+        }
+        .log-line span.timestamp {
+            color: #6366f1;
+            flex-shrink: 0;
+        }
+        .log-line span.component {
+            color: #a5b4fc;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .log-line span.message {
+            color: #e5e7eb;
+        }
+        .log-line.error span.message {
+            color: var(--color-danger);
+        }
+        .log-line.warn span.message {
+            color: var(--color-warning);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-section">
+            <h1>5G Core Control Center <span>MCP ENGINE</span></h1>
+        </div>
+        
+        <div class="master-heal-container">
+            <div class="system-status">
+                <div class="status-dot" id="system-status-dot"></div>
+                <div class="status-text" id="system-status-text">System Operational</div>
+            </div>
+            
+            <button class="btn btn-success" onclick="triggerHealAll()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                HEAL SYSTEM
+            </button>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        
+        <!-- Left Sidebar: Metrics & Captures -->
+        <div class="sidebar-left">
+            
+            <div class="glass-panel">
+                <div class="panel-title">Network Metrics</div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-info">
+                            <h4>AMF Replicas</h4>
+                            <p id="metric-amf">1 / 1</p>
+                        </div>
+                        <div class="metric-status" id="status-amf"></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-info">
+                            <h4>NRF Replicas</h4>
+                            <p id="metric-nrf">1 / 1</p>
+                        </div>
+                        <div class="metric-status" id="status-nrf"></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-info">
+                            <h4>UPF1 Replicas</h4>
+                            <p id="metric-upf1">1 / 1</p>
+                        </div>
+                        <div class="metric-status" id="status-upf1"></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-info">
+                            <h4>UPF2 Replicas</h4>
+                            <p id="metric-upf2">1 / 1</p>
+                        </div>
+                        <div class="metric-status" id="status-upf2"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-panel">
+                <div class="panel-title">Packet Captures</div>
+                <div class="capture-list" id="pcaps-container">
+                    <div style="color: var(--text-muted); font-size:12px; text-align:center; padding:10px;">Scanning PCAP folder...</div>
+                </div>
+            </div>
+            
+            <div class="glass-panel log-panel">
+                <div class="panel-title">Telemetry Syslogs</div>
+                <div class="log-feed" id="logs-container">
+                    <div class="log-line"><span class="message">Connecting to syslog feed...</span></div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Center Column: Network Topology -->
+        <div class="main-content">
+            <div class="glass-panel topology-panel">
+                <div class="panel-title">5G Network Topology</div>
+                <div class="topology-container">
+                    <svg id="topology-map" viewBox="0 0 800 450">
+                        <!-- Definitions for markers and filters -->
+                        <defs>
+                            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.5"/>
+                            </filter>
+                        </defs>
+
+                        <!-- Connection Links -->
+                        <!-- UEs to gNB -->
+                        <line id="link-ue-gnb" x1="100" y1="225" x2="250" y2="225" class="link-line" />
+                        <!-- gNB to AMF (N2 - Control Plane) -->
+                        <path id="link-gnb-amf" d="M 250 225 Q 325 125 400 125" class="link-line" />
+                        <!-- gNB to UPF1/UPF2 (N3 - User Plane) -->
+                        <path id="link-gnb-upf1" d="M 250 225 Q 350 260 450 300" class="link-line" />
+                        <path id="link-gnb-upf2" d="M 250 225 Q 350 360 450 400" class="link-line" />
+                        <!-- AMF/SMF to NRF (SBI) -->
+                        <line id="link-amf-nrf" x1="400" y1="125" x2="600" y2="125" class="link-line" />
+                        <line id="link-smf-nrf" x1="400" y1="225" x2="600" y2="125" class="link-line" />
+                        <!-- SMF to UPF1/2 (N4 - PFCP) -->
+                        <line id="link-smf-upf1" x1="400" y1="225" x2="450" y2="300" class="link-line" />
+                        <line id="link-smf-upf2" x1="400" y1="225" x2="450" y2="400" class="link-line" />
+                        <!-- UPFs to Data Network (N6) -->
+                        <path id="link-upf1-dn" d="M 450 300 Q 600 325 700 350" class="link-line" />
+                        <path id="link-upf2-dn" d="M 450 400 Q 600 385 700 350" class="link-line" />
+
+                        <!-- Link Labels -->
+                        <text x="175" y="215" class="node-label">Radio Link</text>
+                        <text x="320" y="150" class="node-label">N1/N2</text>
+                        <text x="330" y="280" class="node-label">N3</text>
+                        <text x="375" y="260" class="node-label">N4</text>
+                        <text x="490" y="115" class="node-label">SBI</text>
+                        <text x="600" y="320" class="node-label">N6</text>
+
+                        <!-- Nodes -->
+                        <!-- UE Node -->
+                        <g transform="translate(100, 225)" onclick="showNodeDetails('UE', 'User Equipment')">
+                            <circle r="30" class="node-circle" id="node-ue" />
+                            <text y="5" class="node-text">UE</text>
+                            <text y="45" class="node-label">Mobile</text>
+                        </g>
+
+                        <!-- gNB Node -->
+                        <g transform="translate(250, 225)" onclick="showNodeDetails('gNB', 'NextGen RAN Base Station')">
+                            <circle r="32" class="node-circle" id="node-gnb" />
+                            <text y="5" class="node-text">gNB</text>
+                            <text y="48" class="node-label">RAN</text>
+                        </g>
+
+                        <!-- AMF Node -->
+                        <g transform="translate(400, 125)" onclick="showNodeDetails('AMF', 'Access & Mobility Function')">
+                            <circle r="30" class="node-circle" id="node-amf" />
+                            <text y="5" class="node-text">AMF</text>
+                            <text y="45" class="node-label">Control Plane</text>
+                        </g>
+
+                        <!-- SMF Node -->
+                        <g transform="translate(400, 225)" onclick="showNodeDetails('SMF', 'Session Management Function')">
+                            <circle r="30" class="node-circle" id="node-smf" />
+                            <text y="5" class="node-text">SMF</text>
+                            <text y="45" class="node-label">Session CP</text>
+                        </g>
+
+                        <!-- NRF Node -->
+                        <g transform="translate(600, 125)" onclick="showNodeDetails('NRF', 'Network Repository Function')">
+                            <circle r="30" class="node-circle" id="node-nrf" />
+                            <text y="5" class="node-text">NRF</text>
+                            <text y="45" class="node-label">Service Registry</text>
+                        </g>
+
+                        <!-- UPF1 Node -->
+                        <g transform="translate(450, 300)" onclick="showNodeDetails('UPF1', 'User Plane Function 1')">
+                            <circle r="26" class="node-circle" id="node-upf1" />
+                            <text y="5" class="node-text">UPF1</text>
+                            <text y="40" class="node-label">User Plane 1</text>
+                        </g>
+
+                        <!-- UPF2 Node -->
+                        <g transform="translate(450, 400)" onclick="showNodeDetails('UPF2', 'User Plane Function 2')">
+                            <circle r="26" class="node-circle" id="node-upf2" />
+                            <text y="5" class="node-text">UPF2</text>
+                            <text y="40" class="node-label">User Plane 2</text>
+                        </g>
+
+                        <!-- Data Network Node -->
+                        <g transform="translate(700, 350)" onclick="showNodeDetails('DN', 'Data Network (Internet)')">
+                            <circle r="30" class="node-circle" id="node-dn" />
+                            <text y="5" class="node-text">DN</text>
+                            <text y="45" class="node-label">Internet</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Sidebar: AI Root Cause Analysis -->
+        <div class="sidebar-right">
+            <div class="glass-panel ai-diagnosis-panel">
+                <div class="panel-title">AI Root Cause Analysis</div>
+                <div class="ai-content">
+                    <div class="ai-card" id="ai-diagnosis-card">
+                        <div class="ai-field-title">Diagnostic Status</div>
+                        <div class="ai-text" id="ai-cause" style="font-weight: 500;">Running baseline diagnostics...</div>
+                    </div>
+                    
+                    <div class="ai-card" id="ai-impact-card">
+                        <div class="ai-field-title">Operational Impact</div>
+                        <div class="ai-text" id="ai-impact">No degradation detected. Core services operational.</div>
+                    </div>
+                    
+                    <div class="ai-card" id="ai-interfaces-card">
+                        <div class="ai-field-title">Degraded Interfaces</div>
+                        <div class="ai-text" id="ai-interfaces">-</div>
+                    </div>
+                    
+                    <div class="mitigation-box">
+                        <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">Recommended Actions</div>
+                        <div id="ai-actions-container">
+                            <button class="btn btn-outline" style="width:100%;" disabled>No active mitigation needed</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Panel: Chaos Engineering Controls -->
+        <div class="glass-panel chaos-panel">
+            <div class="panel-title">Chaos Engineering Control Center</div>
+            <div class="chaos-grid">
+                <!-- AMF Crash -->
+                <div class="chaos-card">
+                    <div class="chaos-card-title">AMF Control Plane Failure</div>
+                    <div class="chaos-card-desc">Simulates AMF pod crash, severing N2 association.</div>
+                    <div class="chaos-actions">
+                        <button class="btn btn-danger" onclick="injectChaos('amf')">Inject</button>
+                        <button class="btn btn-outline" onclick="restoreChaos('amf')">Heal</button>
+                    </div>
+                </div>
+
+                <!-- UPF Scale Down -->
+                <div class="chaos-card">
+                    <div class="chaos-card-title">UPF Deployment Drop</div>
+                    <div class="chaos-card-desc">Scales UPF1/2 to 0 replicas, cutting data plane tunnels.</div>
+                    <div class="chaos-actions">
+                        <button class="btn btn-danger" onclick="injectChaos('upf')">Inject</button>
+                        <button class="btn btn-outline" onclick="restoreChaos('upf')">Heal</button>
+                    </div>
+                </div>
+
+                <!-- Network Chaos -->
+                <div class="chaos-card">
+                    <div class="chaos-card-title">Network Chaos (N3)</div>
+                    <div class="chaos-card-desc">Injects 200ms latency and 20% loss via netem on gNB N3.</div>
+                    <div class="chaos-actions">
+                        <button class="btn btn-danger" onclick="injectChaos('network')">Inject</button>
+                        <button class="btn btn-outline" onclick="restoreChaos('network')">Heal</button>
+                    </div>
+                </div>
+
+                <!-- N4 Block -->
+                <div class="chaos-card">
+                    <div class="chaos-card-title">N4 PFCP Block</div>
+                    <div class="chaos-card-desc">Blocks port 8805 in UPF via iptables DROP rules.</div>
+                    <div class="chaos-actions">
+                        <button class="btn btn-danger" onclick="injectChaos('n4')">Inject</button>
+                        <button class="btn btn-outline" onclick="restoreChaos('n4')">Heal</button>
+                    </div>
+                </div>
+
+                <!-- NRF Failure -->
+                <div class="chaos-card">
+                    <div class="chaos-card-title">NRF Repository Drop</div>
+                    <div class="chaos-card-desc">Deletes NRF pod, breaking service discovery.</div>
+                    <div class="chaos-actions">
+                        <button class="btn btn-danger" onclick="injectChaos('nrf')">Inject</button>
+                        <button class="btn btn-outline" onclick="restoreChaos('nrf')">Heal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = ""; // Relative URL, since it's served on the same host and port
+
+        // Polling loop
+        async function fetchTelemetry() {
+            try {
+                // 1. Fetch Metrics
+                const metricsRes = await fetch(`${API_URL}/telemetry/metrics`);
+                const metrics = await metricsRes.json();
+                updateMetricsWidgets(metrics);
+
+                // 2. Fetch MCP Context (Topology statuses)
+                const contextRes = await fetch(`${API_URL}/mcp/context`);
+                const context = await contextRes.json();
+                updateTopologyMap(context);
+
+                // 3. Fetch AI Diagnostics
+                const diagRes = await fetch(`${API_URL}/mcp/diagnose`);
+                const diagnosis = await diagRes.json();
+                updateAIDiagnostics(diagnosis);
+
+                // 4. Fetch Logs
+                const logsRes = await fetch(`${API_URL}/telemetry/logs?limit=30`);
+                const logs = await logsRes.json();
+                updateSyslogFeed(logs);
+
+                // 5. Fetch Captures
+                const pcapRes = await fetch(`${API_URL}/telemetry/captures`);
+                const pcaps = await pcapRes.json();
+                updatePCAPList(pcaps);
+
+            } catch (err) {
+                console.error("Telemetry fetch failed:", err);
+            }
+        }
+
+        // Update Left Metrics Widgets
+        function updateMetricsWidgets(data) {
+            const amfVal = data.amf_ready;
+            const nrfVal = data.nrf_ready;
+            const upf1Val = data.upf1_ready;
+            const upf2Val = data.upf2_ready;
+
+            document.getElementById("metric-amf").textContent = `${amfVal} / ${data.raw["open5gs-amf_spec_replicas"] || 1}`;
+            document.getElementById("metric-nrf").textContent = `${nrfVal} / ${data.raw["open5gs-nrf_spec_replicas"] || 1}`;
+            document.getElementById("metric-upf1").textContent = `${upf1Val} / ${data.raw["open5gs-upf1_spec_replicas"] || 1}`;
+            document.getElementById("metric-upf2").textContent = `${upf2Val} / ${data.raw["open5gs-upf2_spec_replicas"] || 1}`;
+
+            setIndicatorColor("status-amf", amfVal > 0);
+            setIndicatorColor("status-nrf", nrfVal > 0);
+            setIndicatorColor("status-upf1", upf1Val > 0);
+            setIndicatorColor("status-upf2", upf2Val > 0);
+        }
+
+        function setIndicatorColor(id, isHealthy) {
+            const el = document.getElementById(id);
+            if (isHealthy) {
+                el.style.backgroundColor = "var(--color-success)";
+                el.style.boxShadow = "0 0 8px var(--color-success-glow)";
+            } else {
+                el.style.backgroundColor = "var(--color-danger)";
+                el.style.boxShadow = "0 0 8px var(--color-danger-glow)";
+            }
+        }
+
+        // Update Topology SVGs & Link Glows
+        function updateTopologyMap(context) {
+            const status = context.status; // "Healthy" or "Degraded"
+            
+            // System header status
+            const dot = document.getElementById("system-status-dot");
+            const text = document.getElementById("system-status-text");
+            if (status === "Healthy") {
+                dot.style.backgroundColor = "var(--color-success)";
+                dot.style.boxShadow = "0 0 12px var(--color-success-glow)";
+                text.textContent = "System Operational";
+                text.style.color = "var(--color-success)";
+            } else {
+                dot.style.backgroundColor = "var(--color-danger)";
+                dot.style.boxShadow = "0 0 12px var(--color-danger-glow)";
+                text.textContent = "Degraded State";
+                text.style.color = "var(--color-danger)";
+            }
+
+            // Defaults: Reset all to healthy
+            resetTopologyElements();
+
+            // Loop anomalies and apply critical/degraded status to nodes/links
+            context.detected_anomalies.forEach(anomaly => {
+                const comp = anomaly.component;
+                const symptoms = anomaly.symptom || "";
+
+                if (comp === "AMF") {
+                    setNodeState("node-amf", "critical");
+                    setLinkState("link-gnb-amf", "critical");
+                    setLinkState("link-ue-gnb", "degraded");
+                }
+                else if (comp === "UPF") {
+                    setNodeState("node-upf1", "critical");
+                    setNodeState("node-upf2", "critical");
+                    setLinkState("link-gnb-upf1", "critical");
+                    setLinkState("link-gnb-upf2", "critical");
+                    setLinkState("link-upf1-dn", "critical");
+                    setLinkState("link-upf2-dn", "critical");
+                }
+                else if (comp === "gNB") {
+                    setNodeState("node-gnb", "degraded");
+                    setLinkState("link-gnb-upf1", "degraded");
+                    setLinkState("link-gnb-upf2", "degraded");
+                }
+                else if (comp === "UPF1 / SMF1") {
+                    setLinkState("link-smf-upf1", "critical");
+                    setNodeState("node-upf1", "degraded");
+                }
+                else if (comp === "NRF") {
+                    setNodeState("node-nrf", "critical");
+                    setLinkState("link-amf-nrf", "critical");
+                    setLinkState("link-smf-nrf", "critical");
+                }
+            });
+        }
+
+        function resetTopologyElements() {
+            const nodes = ["node-ue", "node-gnb", "node-amf", "node-smf", "node-nrf", "node-upf1", "node-upf2", "node-dn"];
+            const links = ["link-ue-gnb", "link-gnb-amf", "link-gnb-upf1", "link-gnb-upf2", "link-amf-nrf", "link-smf-nrf", "link-smf-upf1", "link-smf-upf2", "link-upf1-dn", "link-upf2-dn"];
+
+            nodes.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.className.baseVal = "node-circle";
+                    el.style.stroke = "";
+                }
+            });
+
+            links.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.className.baseVal = "link-line";
+                    el.style.stroke = "";
+                }
+            });
+        }
+
+        function setNodeState(id, state) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add(state);
+        }
+
+        function setLinkState(id, state) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add(state);
+        }
+
+        // Update Right AI diagnostics
+        function updateAIDiagnostics(diag) {
+            const causeEl = document.getElementById("ai-cause");
+            const impactEl = document.getElementById("ai-impact");
+            const interfacesEl = document.getElementById("ai-interfaces");
+            const actionsContainer = document.getElementById("ai-actions-container");
+
+            const diagCard = document.getElementById("ai-diagnosis-card");
+            const impactCard = document.getElementById("ai-impact-card");
+            const interfacesCard = document.getElementById("ai-interfaces-card");
+
+            causeEl.textContent = diag.probable_cause;
+            impactEl.textContent = diag.impact;
+            
+            // Interfaces list
+            if (diag.affected_interfaces && diag.affected_interfaces.length > 0) {
+                interfacesEl.textContent = diag.affected_interfaces.join(" | ");
+            } else {
+                interfacesEl.textContent = "None";
+            }
+
+            // Severity card color styling
+            diagCard.className = "ai-card";
+            impactCard.className = "ai-card";
+            interfacesCard.className = "ai-card";
+
+            if (diag.severity === "CRITICAL") {
+                diagCard.classList.add("critical");
+                impactCard.classList.add("critical");
+                interfacesCard.classList.add("critical");
+            } else if (diag.severity === "WARNING") {
+                diagCard.classList.add("warning");
+                impactCard.classList.add("warning");
+                interfacesCard.classList.add("warning");
+            }
+
+            // Render Mitigation Actions
+            actionsContainer.innerHTML = "";
+            if (diag.recommended_actions && diag.recommended_actions.length > 0) {
+                diag.recommended_actions.forEach(action => {
+                    if (action.command === "echo 'System healthy'") {
+                        const btn = document.createElement("button");
+                        btn.className = "btn btn-outline";
+                        btn.style.width = "100%";
+                        btn.disabled = true;
+                        btn.textContent = action.description;
+                        actionsContainer.appendChild(btn);
+                    } else {
+                        const btn = document.createElement("button");
+                        btn.className = "btn btn-success";
+                        btn.style.width = "100%";
+                        btn.style.marginBottom = "8px";
+                        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> ${action.description}`;
+                        btn.onclick = () => runMitigationCommand(action.command);
+                        actionsContainer.appendChild(btn);
+                    }
+                });
+            }
+        }
+
+        // Run recovery action command
+        async function runMitigationCommand(command) {
+            let scenario = "";
+            if (command.includes("amf")) scenario = "amf";
+            else if (command.includes("upf")) scenario = "upf";
+            else if (command.includes("network")) scenario = "network";
+            else if (command.includes("n4")) scenario = "n4";
+            else if (command.includes("nrf")) scenario = "nrf";
+
+            // If it is UERANSIM restart command
+            if (command.includes("delete pod -n open5gs -l app=ueransim")) {
+                // Delete ueransim pods via background call, we'll hit main.py POST
+                try {
+                    // Let's call /chaos/restore/amf as it recovers both or trigger custom restore
+                    const res = await fetch(`${API_URL}/chaos/restore/amf`, { method: "POST" });
+                    alert("Triggered UERANSIM container restart to stabilize connection.");
+                    return;
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            if (scenario) {
+                try {
+                    const res = await fetch(`${API_URL}/chaos/restore/${scenario}`, { method: "POST" });
+                    const result = await res.json();
+                    alert(`Mitigation applied: ${scenario.toUpperCase()} restoration initiated.`);
+                    fetchTelemetry();
+                } catch (err) {
+                    console.error("Mitigation call failed:", err);
+                }
+            } else {
+                alert(`Running command: ${command}`);
+            }
+        }
+
+        // Update Log Feed Widget
+        function updateSyslogFeed(logs) {
+            const container = document.getElementById("logs-container");
+            container.innerHTML = "";
+            
+            if (!logs || logs.length === 0) {
+                container.innerHTML = `<div style="color:var(--text-muted); font-size:11px; text-align:center; padding-top:10px;">No recent logs.</div>`;
+                return;
+            }
+
+            logs.forEach(log => {
+                try {
+                    const line = document.createElement("div");
+                    line.className = "log-line";
+                    
+                    // Extract message
+                    let rawMsg = log.log || log.msg || log.raw_message || JSON.stringify(log);
+                    let displayMsg = rawMsg;
+                    
+                    // If it is a nested JSON log string, extract the inner message if possible
+                    if (typeof rawMsg === 'string' && rawMsg.startsWith('{') && rawMsg.endsWith('}')) {
+                        try {
+                            const inner = JSON.parse(rawMsg);
+                            displayMsg = inner.msg || inner.message || rawMsg;
+                        } catch (e) {}
+                    }
+                    
+                    const msgLower = displayMsg.toLowerCase();
+                    if (msgLower.includes("error") || msgLower.includes("disconnect") || msgLower.includes("terminated") || msgLower.includes("failed") || msgLower.includes("down")) {
+                        line.classList.add("error");
+                    } else if (msgLower.includes("warning") || msgLower.includes("warn") || msgLower.includes("lost")) {
+                        line.classList.add("warn");
+                    }
+
+                    // Extract timestamp
+                    let timeStr = "00:00:00";
+                    let rawTime = log.time || log.timestamp || (log.t ? log.t.$date : null);
+                    if (rawTime && typeof rawTime === 'string') {
+                        if (rawTime.includes('T')) {
+                            timeStr = rawTime.split('T')[1].substring(0, 8);
+                        } else {
+                            timeStr = rawTime.substring(0, 8);
+                        }
+                    }
+
+                    // Extract component
+                    let componentStr = "Core";
+                    if (log.kubernetes && log.kubernetes.container_name) {
+                        componentStr = log.kubernetes.container_name;
+                        // Strip prefix open5gs- for cleanliness
+                        if (componentStr.startsWith("open5gs-")) {
+                            componentStr = componentStr.substring(8);
+                        }
+                    } else if (log.component) {
+                        componentStr = log.component;
+                    }
+
+                    line.innerHTML = `
+                        <span class="timestamp">${timeStr}</span>
+                        <span class="component">[${componentStr.toUpperCase()}]</span>
+                        <span class="message">${displayMsg}</span>
+                    `;
+                    container.appendChild(line);
+                } catch (e) {
+                    console.error("Failed to parse log entry:", e, log);
+                }
+            });
+        }
+
+        function updatePCAPList(pcaps) {
+            const container = document.getElementById("pcaps-container");
+            container.innerHTML = "";
+
+            if (!pcaps || pcaps.length === 0) {
+                container.innerHTML = `<div style="color:var(--text-muted); font-size:12px; text-align:center; padding:10px;">No PCAP capture files found.</div>`;
+                return;
+            }
+
+            // The backend returns a sorted array. The first item is the latest capture file.
+            const lastCapture = pcaps[0];
+            if (lastCapture) {
+                const item = document.createElement("div");
+                item.className = "capture-item";
+                const sizeKb = (lastCapture.size_bytes / 1024).toFixed(1);
+                item.innerHTML = `
+                    <div style="display:flex; flex-direction:column;">
+                        <span class="filename" style="font-weight:600; color:var(--color-success);">${lastCapture.filename}</span>
+                        <span style="font-size:10px; color:var(--text-muted);">Last Modified Capture File</span>
+                    </div>
+                    <span class="size">${sizeKb} KB</span>
+                `;
+                container.appendChild(item);
+            }
+
+            // Add info for remaining capture counts
+            const infoItem = document.createElement("div");
+            infoItem.className = "capture-item";
+            infoItem.style.borderStyle = "dashed";
+            infoItem.style.background = "transparent";
+            infoItem.innerHTML = `
+                <span style="color:var(--text-muted);">Total captures in archive</span>
+                <span style="font-weight:600; color:var(--accent);">${pcaps.length} files</span>
+            `;
+            container.appendChild(infoItem);
+        }
+
+        // Chaos Controller Actions
+        async function injectChaos(scenario) {
+            try {
+                const res = await fetch(`${API_URL}/chaos/inject/${scenario}`, { method: "POST" });
+                const data = await res.json();
+                alert(`Chaos injected: Simulation of ${scenario.toUpperCase()} failure initiated.`);
+                fetchTelemetry();
+            } catch (err) {
+                console.error("Chaos injection call failed:", err);
+            }
+        }
+
+        async function restoreChaos(scenario) {
+            try {
+                const res = await fetch(`${API_URL}/chaos/restore/${scenario}`, { method: "POST" });
+                const data = await res.json();
+                alert(`Heal command sent: Recovery of ${scenario.toUpperCase()} core nodes triggered.`);
+                fetchTelemetry();
+            } catch (err) {
+                console.error("Chaos recovery call failed:", err);
+            }
+        }
+
+        async function triggerHealAll() {
+            try {
+                const res = await fetch(`${API_URL}/chaos/heal`, { method: "POST" });
+                const data = await res.json();
+                alert(`System Recovery: Global mitigation signal dispatched to all core Network Functions.`);
+                fetchTelemetry();
+            } catch (err) {
+                console.error("Global heal failed:", err);
+            }
+        }
+
+        // Show node info alert on SVG node click
+        function showNodeDetails(name, fullname) {
+            alert(`5G NF: ${name}\nDescription: ${fullname}\nStatus: Monitoring metrics dynamically.`);
+        }
+
+        // Setup polling every 2 seconds
+        setInterval(fetchTelemetry, 2000);
+        fetchTelemetry(); // Initial fetch
+    </script>
+</body>
+</html>

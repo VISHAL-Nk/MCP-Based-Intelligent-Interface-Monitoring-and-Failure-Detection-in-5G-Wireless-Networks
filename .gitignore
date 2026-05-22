@@ -1,0 +1,7 @@
+*.pyc
+*.env
+__pycache__
+venv
+*.log
+*.pcap
+Notes/
