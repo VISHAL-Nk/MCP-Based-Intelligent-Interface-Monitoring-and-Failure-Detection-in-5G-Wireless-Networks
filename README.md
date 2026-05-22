@@ -15,30 +15,51 @@ This platform ingests multi-modal telemetry (Prometheus metrics, Fluent Bit sysl
 
 ```mermaid
 flowchart TD
-    subgraph K8s Cluster [Kubernetes 5G Core Namespace]
-        UE[UERANSIM UE] <-->|Radio Link| GNB[UERANSIM gNB]
-        GNB <-->|N1/N2 Control Plane| AMF[Open5GS AMF]
-        GNB <-->|N3 User Plane| UPF1[Open5GS UPF1] & UPF2[Open5GS UPF2]
-        AMF <-->|SBI HTTP/2| NRF[Open5GS NRF]
-        SMF[Open5GS SMF] <-->|N4 PFCP| UPF1 & UPF2
+
+    subgraph K8s_Cluster["Kubernetes 5G Core Namespace"]
+        UE["UERANSIM UE"] <-->|Radio Link| GNB["UERANSIM gNB"]
+
+        GNB <-->|N1/N2 Control Plane| AMF["Open5GS AMF"]
+
+        GNB <-->|N3 User Plane| UPF1["Open5GS UPF1"]
+        GNB <-->|N3 User Plane| UPF2["Open5GS UPF2"]
+
+        AMF <-->|SBI HTTP/2| NRF["Open5GS NRF"]
+
+        SMF["Open5GS SMF"] <-->|N4 PFCP| UPF1
+        SMF <-->|N4 PFCP| UPF2
+
         SMF <-->|SBI HTTP/2| NRF
     end
 
-    subgraph Telemetry Ingestion Layer
-        Prom[Prometheus] <-- scrapes --- K8s_Metrics[kube-state-metrics & Pod Endpoints]
-        FB[Fluent Bit] <-- streams --- Pod_Logs[Container Syslogs]
-        PCAP[Automated PCAP Engine] <-- captures --- Capt_Sidecar[tshark Monitoring Pod]
+
+    subgraph Telemetry_Ingestion_Layer
+        Prom["Prometheus"] <-->|scrapes| K8s_Metrics["kube-state-metrics & Pod Endpoints"]
+
+        FB["Fluent Bit"] <-->|streams| Pod_Logs["Container Syslogs"]
+
+        PCAP["Automated PCAP Engine"] <-->|captures| Capt_Sidecar["tshark Monitoring Pod"]
     end
 
-    subgraph Python Backend [FastAPI MCP Context Server: Port 8000]
-        TI[Telemetry Ingestor] <--> Prom & FB & PCAP
-        MCP_Eng[MCP Engine] <-->|Correlates Telemetry| TI
-        AI_Cl[AI Diagnostic Client] <-->|OpenAI / Expert Rules| MCP_Eng
-        FastAPI_App[FastAPI Routes] <--> MCP_Eng & AI_Cl
+
+    subgraph Python_Backend["FastAPI MCP Context Server : Port 8000"]
+
+        TI["Telemetry Ingestor"] <--> Prom
+        TI <--> FB
+        TI <--> PCAP
+
+        MCP_Eng["MCP Engine"] <-->|Correlates Telemetry| TI
+
+        AI_Cl["AI Diagnostic Client"] <-->|OpenAI / Expert Rules| MCP_Eng
+
+        FastAPI_App["FastAPI Routes"] <--> MCP_Eng
+        FastAPI_App <--> AI_Cl
     end
 
-    subgraph Frontend Control Center
-        UI[Glassmorphic HTML/CSS/JS Dashboard] <-->|REST Poll & Action Commands| FastAPI_App
+
+    subgraph Frontend_Control_Center
+        UI["Glassmorphic HTML/CSS/JS Dashboard"]
+            <-->|REST Poll & Action Commands| FastAPI_App
     end
 ```
 
